@@ -45,12 +45,17 @@ class Database:
 
 
 
-    def save(self):
+    def save(self, dir = None):
         '''
         Save db as a pkl file. This method saves the db object, ie all the tables and attributes.
         '''
+        if dir == None:
+            dirtosave = self.savedir
+        else:
+            dirtosave = dir
+
         for name, table in self.tables.items():
-            with open(f'{self.savedir}/{name}.pkl', 'wb') as f:
+            with open(f'{dirtosave}/{name}.pkl', 'wb') as f:
                 pickle.dump(table, f)
 
     def _save_locks(self):
@@ -100,6 +105,9 @@ class Database:
         # self._name = Table(name=name, column_names=column_names, column_types=column_types, load=load)
         # check that new dynamic var doesnt exist already
         if name not in self.__dir__():
+            if name != "meta_length" and name != "meta_locks" and name != "meta_insert_stack" and name != "meta_indexes":
+                log = open("log/wal.log", "a")
+                log.write(f"{name} create(column names: {column_names}, column types: {column_types}, primary key: {primary_key}, loaded from: {load})\n")
             setattr(self, name, self.tables[name])
         else:
             raise Exception(f'Attribute "{name}" already exists in class "{self.__class__.__name__}".')
@@ -231,6 +239,9 @@ class Database:
             self.lockX_table(table_name)
         insert_stack = self._get_insert_stack_for_table(table_name)
         try:
+            log = open("log/wal.log", "a")
+            log.write(f"{table_name} insert {row}\n")
+            self.table_to_csv(table_name, f"log/{table_name}.csv")
             self.tables[table_name]._insert(row, insert_stack)
         except Exception as e:
             print(e)
@@ -260,6 +271,8 @@ class Database:
         if self.is_locked(table_name):
             return
         self.lockX_table(table_name)
+        log = open("log/wal.log", "a")
+        log.write(f"{table_name} update(set: {set_value}, column to set: {set_column}, where: {condition})\n")
         self.tables[table_name]._update_row(set_value, set_column, condition)
         self.unlock_table(table_name)
         self._update()
@@ -280,6 +293,9 @@ class Database:
         if self.is_locked(table_name):
             return
         self.lockX_table(table_name)
+        if table_name != "meta_length" and table_name != "meta_locks" and table_name != "meta_insert_stack" and table_name != "meta_indexes":
+            log = open("log/wal.log", "a")
+            log.write(f"{table_name} delete({condition})\n")
         deleted = self.tables[table_name]._delete_where(condition)
         self.unlock_table(table_name)
         self._update()

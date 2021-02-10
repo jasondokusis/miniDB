@@ -1,0 +1,72 @@
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)
+classroom create(column names: ['building', 'room_number', 'capacity'], column types: [<class 'str'>, <class 'str'>, <class 'int'>], primary key: None, loaded from: None)
+classroom insert ['Packard', '101', '500']
+classroom insert ['Painter', '514', '10']
+classroom insert ['Taylor', '3128', '70']
+classroom insert ['Watson', '100', '30']
+classroom insert ['Watson', '120', '50']
+classroom update(set: 10, column to set: capacity, where: capacity <= 30)
+classroom delete(capacity <= 10)
+test create(column names: ['c1'], column types: [<class 'str'>], primary key: c1, loaded from: None)

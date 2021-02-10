@@ -10,3 +10,14 @@ db.insert('classroom', ['Taylor', '3128', '70'])
 db.insert('classroom', ['Watson', '100', '30'])
 db.insert('classroom', ['Watson', '120', '50'])
 
+db.update('classroom', 10, 'capacity', 'capacity <= 30')
+
+db.delete('classroom', 'capacity <= 10')
+
+db.drop_table('test')
+db.create_table('test', ['c1'], [str], 'c1')
+
+db.save("log/testfolder")
+
+db.classroom.show()
+
