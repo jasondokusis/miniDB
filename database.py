@@ -43,6 +43,8 @@ class Database:
         self.create_table('meta_indexes',  ['table_name', 'index_name'], [str, str])
         self.save()
 
+        self.maxrollback = 30
+
 
 
     def save(self, dir = None):

@@ -1,4 +1,5 @@
 from database import Database
+import os
 # create db with name "smdb"
 db = Database('vsmdb', load=False)
 # create a single table named "classroom"
@@ -17,7 +18,7 @@ db.delete('classroom', 'capacity <= 10')
 db.drop_table('test')
 db.create_table('test', ['c1'], [str], 'c1')
 
-db.save("log/testfolder")
-
 db.classroom.show()
+
+i = db.maxrollback
 
