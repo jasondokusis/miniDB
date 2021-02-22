@@ -13,6 +13,12 @@ class Database:
     '''
 
     def __init__(self, name, load=True):
+        self.maxrollback = 30
+        self.top = 1
+       # for i in range(1, self.maxrollback + 1):
+        #    if(not(os.path.exists(f"log/States/{i}"))):
+       #         os.mkdir(f"log/States/{i}")
+
         self.tables = {}
         self._name = name
 
@@ -43,9 +49,6 @@ class Database:
         self.create_table('meta_indexes',  ['table_name', 'index_name'], [str, str])
         self.save()
 
-        self.maxrollback = 30
-
-
 
     def save(self, dir = None):
         '''
@@ -54,7 +57,13 @@ class Database:
         if dir == None:
             dirtosave = self.savedir
         else:
-            dirtosave = dir
+            temp = f"log/States/{self.top}"
+            if not(os.path.exists(f"log/States/{self.top}")):
+                os.mkdir(f"log/States/{self.top}")
+                dirtosave = dir + f"/{self.top}"
+                self.top = self.top + 1
+                topfile = open("log/States/top.log", "w")
+                topfile.write(f"{self.top}")
 
         for name, table in self.tables.items():
             with open(f'{dirtosave}/{name}.pkl', 'wb') as f:
@@ -243,7 +252,6 @@ class Database:
         try:
             log = open("log/wal.log", "a")
             log.write(f"{table_name} insert {row}\n")
-            self.table_to_csv(table_name, f"log/{table_name}.csv")
             self.tables[table_name]._insert(row, insert_stack)
         except Exception as e:
             print(e)
