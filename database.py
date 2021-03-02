@@ -6,6 +6,7 @@ import os
 from btree import Btree
 import shutil
 from misc import split_condition
+import glob
 
 class Database:
     '''
@@ -14,10 +15,13 @@ class Database:
 
     def __init__(self, name, load=True):
         self.maxrollback = 30
-        self.top = 1
-       # for i in range(1, self.maxrollback + 1):
-        #    if(not(os.path.exists(f"log/States/{i}"))):
-       #         os.mkdir(f"log/States/{i}")
+
+        #Ανοιγμα του αρχείου top.log, στο οποίο αποθηκεύεται μόνιμα η τιμή του self.top
+        topfile = open(f"log/States/top.log", "r")
+
+        #Ανάθεση τιμής του self.top με βάση το αρχείο top.log στον φάκελο log/States
+        self.top = int(topfile.readlines()[0])
+        topfile.close()
 
         self.tables = {}
         self._name = name
@@ -49,25 +53,162 @@ class Database:
         self.create_table('meta_indexes',  ['table_name', 'index_name'], [str, str])
         self.save()
 
+    def _check_top(self, value = None):
+        '''
+        Η συνάρτηση αυτή καταλαβαίνει αν ο αριθμός value είναι έξω από το διάστημα (1:self.maxrollback + 1) και τον μετατοπίζει ανάλογα.
+        Δηλαδή, αν ο αριθμός value είναι μία θέση πίσω από το 1, τότε θα γίνει ίσος με maxrollback + 1 και θα πάει στην μέγιστη πιθανή θέση.
+        Αν ο αριθμός είναι λίγο μεγαλύτερος από το maxrollback + 1, τότε θα του αφαιρεθεί το (maxrollback + 1), για να μετατοπιστεί στην αρχική θέση.
+        '''
+        if value == None:
+            value = self.top
+        if value < 1:
+            value = self.maxrollback + 1 + value
+        elif value > self.maxrollback + 1:
+            value -= self.maxrollback + 1
+        return value
 
-    def save(self, dir = None):
+    def save(self, dir = None, dont_update = False):
         '''
         Save db as a pkl file. This method saves the db object, ie all the tables and attributes.
         '''
-        if dir == None:
+        if dir == None: #Πως δούλευε πριν η λειτουργία
             dirtosave = self.savedir
-        else:
-            temp = f"log/States/{self.top}"
-            if not(os.path.exists(f"log/States/{self.top}")):
-                os.mkdir(f"log/States/{self.top}")
-                dirtosave = dir + f"/{self.top}"
+        else: #Πώς δουλεύει η λειτουργία αν δώσουμε το που ακριβώς θα σωθεί ο πίνακας
+
+            #Αν υπάρχει ήδη ο φάκελος στον οποίο δείχνει το self.top, τότε κάνε overwrite τον φάκελο αυτόν
+            if os.path.exists(f"log/States/{self.top}"):
+               #Πάρε όλα τα αρχεία από τον φάκελο
+               files = glob.glob(f"log/States/{self.top}/*")
+               #Σβήσε όλα τα αρχεία
+               for file in files:
+                   os.remove(file)
+               #Αφαίρεσε τον φάκελο
+               os.rmdir(f"log/States/{self.top}")
+            #Δημιούργησε τον φάκελο
+            os.mkdir(f"log/States/{self.top}")
+
+            #Βάλε την βάση στον φάκελο με όνομα self.top
+            dirtosave = dir + f"/{self.top}"
+
+            #Αν έχει ζητηθεί να γίνει ανανέωση του self.top, τότε το top αυξάνεται κατά 1, 
+            #ελέγχεται αν έχει βγει εκτός των επιτρεπτών ορίων με τη λειτουργία _check_top()
+            #Και αποθηκεύεται στο αρχείο top.log στον φάκελο log/States
+            if not(dont_update):
                 self.top = self.top + 1
+                self.top = self._check_top()
                 topfile = open("log/States/top.log", "w")
                 topfile.write(f"{self.top}")
+                topfile.close()
 
         for name, table in self.tables.items():
             with open(f'{dirtosave}/{name}.pkl', 'wb') as f:
                 pickle.dump(table, f)
+
+    def rollback(self, amount):
+        #Αν ζητηθεί να γίνει rollback πέρα από όσο επιτρέπεται, τότε το πρόγραμμα σταματάει
+        if amount > self.maxrollback:
+            print("Unable to roll back that many commands")
+        else:
+            #Το rollbackto αποθηκεύει τον αριθμό του backup που πρέπει να φορτώσουμε
+            rollbackto = self.top - 1 - amount
+            rollbackto = self._check_top(rollbackto)
+            
+            #Αν δεν υπάρχει ο φάκελος, γράψε στην οθόνη ότι δεν έχουν γίνει αρκετές εντολές
+            if not(os.path.exists(f"log/States/{rollbackto}")):
+                print(f"You have not done enough commands yet to roll back that much. You have only done {self.top - 1} commands so far.")
+            else:
+                #Κάνε load τη βάση από το rollbackto και γράψε ότι έγινε επιτυχώς
+                self.load(f"log/States/{rollbackto}")
+                print("Rollback successful!")
+
+                #Ο ακόλουθος βρόχος while σβήνει έναν-έναν όλους τους φακέλους μέχρι τον φάκελο τον οποίο φορτώσαμε
+                i = self.top - 1
+                while i != rollbackto:
+                    if os.path.exists(f"log/States/{i}"):
+                        files = glob.glob(f"log/States/{i}/*")
+                        for file in files:
+                            os.remove(file)
+                        os.rmdir(f"log/States/{i}")
+                    i -= 1
+                    #Έλεγχος ορίων του i
+                    i = self._check_top(i)
+                self.top = rollbackto + 1
+                self.top = self._check_top()
+                
+                #Γράψε το καινούργιο self.top στο αρχείο top.log
+                topfile = open(f"log/States/top.log", "w")
+                topfile.write(str(self.top))
+
+    def change_max_rollback(self, amount):
+        #Ο αριθμός amount πρέπει να είναι ακέραιος και μεγαλύτερος από το μηδέν
+        if amount < 0 or not(isinstance(amount, int)):
+            print("Please type a correct max rollback number.")
+        else:
+            #Αν ο αριθμός στον οποίο θα αλλάξει ο maxrollback είναι μικρότερος, τότε πάρε τα τελευταία backup ίσα με amount, βάλε τις σε σειρά και σβήσε τα υπόλοιπα
+            if amount < self.maxrollback:
+                #Το backupto αποθηκεύει τη θέση του backup από την οποία θα αρχίσουμε να αντογράφουμε φακέλους, για να μην διαγραφούνε στη διαδικασία διαγραφής των backup
+                backupto = self._check_top(self.top - amount)
+
+                j = 1
+                i = backupto
+                #Για κάθε backup από το backupto μέχρι το self.top αντιγράφουμε τον φάκελο σε θέσεις που είναι σε αύξουσα σειρά αρχίζοντας από το 1
+                while i != self._check_top(self.top + 1):
+                    files = glob.glob(f"log\\States\\{i}\\*")
+                    os.mkdir(f"log\\States\\{j}b")
+                    #Η αντιγραφή των αρχείων
+                    for file in files:
+                        tempfile = open(file, "r")
+                        shutil.copyfile(file, f"log\\States\\{j}b\\" + os.path.basename(tempfile.name))
+                        tempfile.close()
+                    i += 1
+                    #Έλεγχος ορίων του i
+                    i = self._check_top(i)
+                    j += 1
+                #Στο τέλος του βρόχου, το j θα είναι ίσο με το καινούργιο self.top
+            #Αν είναι το amount μεγαλύτερο από το τρέχων self.maxrollback:
+            elif amount > self.maxrollback:
+                #Κάνε αντιγραφή όλων των φακέλων που υπάρχουν μέχρι τώρα σε σωστή σειρά
+                for i in range(1, self.maxrollback + 2):
+                    files = glob.glob(f"log\\States\\{i}\\*")
+                    os.mkdir(f"log\\States\\{i}b") 
+                    for file in files:
+                        tempfile = open(file, "r")
+                        shutil.copyfile(file, f"log\\States\\{i}b\\" + os.path.basename(tempfile.name))
+                        tempfile.close()
+                #Θέσε το j για να είναι ίσο με το καινούργιο self.top
+                j = i + 1
+            #Αν είναι ίδια, τότε η λειτουργία σταματάει εδώ
+            else:
+                print("Database unchanged. No differrence in max rollback amount.")
+                return
+
+            #Ο ακόλουθος βρόχος διαγράφει όλους τους φακέλους εκτός από αυτούς που έχουν αντιγραφεί
+            for i in range(1, self.maxrollback + 2):
+                if os.path.exists(f"log\\States\\{i}"):
+                    files = glob.glob(f"log\\States\\{i}\\*")
+                    for file in files:
+                        os.remove(file)
+                    files.clear()
+                    os.rmdir(f"log/States/{i}")
+
+            #Ο βρόχος αυτός μετονομάζει του φακέλους που έχουν αντιγραφεί σε ονομασίες χρήσιμες για το Σύστημα Διαχείρισης
+            for i in range(1, j):
+                os.rename(f"log/States/{i}b", f"log/States/{i}")
+            
+            #Θέσε το self.top = i
+            self.top = j
+
+            #Γράψε το self.top σε αρχείο για μόνιμη αποθήκευση:
+            topfile = open("log/States/top.log", "w")
+            topfile.write(str(self.top))
+            topfile.close()
+
+            #Γράψε το καινούργιο rollback στο αρχείο log/States/maxrollback.log.
+            self.maxrollback = amount
+            maxrollbackfile = open("log/States/maxrollback.log", "w")
+            maxrollbackfile.write(str(self.maxrollback))
+            maxrollbackfile.close()
+                
 
     def _save_locks(self):
         '''
@@ -116,9 +257,14 @@ class Database:
         # self._name = Table(name=name, column_names=column_names, column_types=column_types, load=load)
         # check that new dynamic var doesnt exist already
         if name not in self.__dir__():
+            #Αν δεν είναι metatable ο πίνακας, τότε γράφουμε στο αρχείο wal
             if name != "meta_length" and name != "meta_locks" and name != "meta_insert_stack" and name != "meta_indexes":
                 log = open("log/wal.log", "a")
                 log.write(f"{name} create(column names: {column_names}, column types: {column_types}, primary key: {primary_key}, loaded from: {load})\n")
+                self.save("log/States")
+            #Αν είναι, τότε αποθηκεύουμε το backup της βάσης δεδομένων χωρίς να αλλάξει το self.top
+            else:
+                self.save("log/States", True)
             setattr(self, name, self.tables[name])
         else:
             raise Exception(f'Attribute "{name}" already exists in class "{self.__class__.__name__}".')
@@ -140,11 +286,21 @@ class Database:
         delattr(self, table_name)
         if os.path.isfile(f'{self.savedir}/{table_name}.pkl'):
             os.remove(f'{self.savedir}/{table_name}.pkl')
+            #Άνοιγμα του wal.log για εγγραφή
+            log = open("log/wal.log", "a")
+
+            #Γράψιμο πληροφοριών και κλείσιμο του αρχείου
+            log.write(f"{table_name} delete")
+            log.close()
+
         else:
             print(f'"{self.savedir}/{table_name}.pkl" does not exist.')
         self.delete('meta_locks', f'table_name=={table_name}')
         self.delete('meta_length', f'table_name=={table_name}')
         self.delete('meta_insert_stack', f'table_name=={table_name}')
+
+        #Αποθήκευση του backup
+        self.save("log/States")
 
         # self._update()
         self.save()
@@ -250,10 +406,18 @@ class Database:
             self.lockX_table(table_name)
         insert_stack = self._get_insert_stack_for_table(table_name)
         try:
+            #Ανοίγουμε το wal.log
             log = open("log/wal.log", "a")
+
+            #Γράφουμε το ότι θα γίνει insert στον πίνακα με όνομα table_name
             log.write(f"{table_name} insert {row}\n")
+
             self.tables[table_name]._insert(row, insert_stack)
-        except Exception as e:
+
+            #Μετά από το insert, σώνουμε ένα backup της βάσης
+            self.save("log/States")
+
+        except Exception as e: 
             print(e)
             print('ABORTED')
         # sleep(2)
@@ -280,12 +444,19 @@ class Database:
         self.load(self.savedir)
         if self.is_locked(table_name):
             return
-        self.lockX_table(table_name)
+
+        #Ανοίγουμε το αρχείο wal και γράφουμε το update που θα γίνει
         log = open("log/wal.log", "a")
         log.write(f"{table_name} update(set: {set_value}, column to set: {set_column}, where: {condition})\n")
+
+        self.lockX_table(table_name)
+
         self.tables[table_name]._update_row(set_value, set_column, condition)
         self.unlock_table(table_name)
         self._update()
+
+        #Αποθηκεύουμε το backup του πίνακα
+        self.save("log/States")
         self.save()
 
     def delete(self, table_name, condition):
@@ -303,9 +474,18 @@ class Database:
         if self.is_locked(table_name):
             return
         self.lockX_table(table_name)
+
+        #Αν δεν είναι meta_table, τότε αποθηκεύουμε τη βάση κανονικά
         if table_name != "meta_length" and table_name != "meta_locks" and table_name != "meta_insert_stack" and table_name != "meta_indexes":
+            #Ανοίγουμε το wal αρχείο, για γράψιμο της εντολής delete
             log = open("log/wal.log", "a")
             log.write(f"{table_name} delete({condition})\n")
+            #Σώνουμε το backup της βάσης
+            self.save("log/States")
+        #Αν είναι meta_table, τότε αποθηκεύουμε τη βάση χωρίς να μεγαλώνουμε το self.top κατά 1
+        else:
+            self.save("log/States", True)
+
         deleted = self.tables[table_name]._delete_where(condition)
         self.unlock_table(table_name)
         self._update()
@@ -383,6 +563,22 @@ class Database:
         self.tables[table_name]._sort(column_name, asc=asc)
         self.unlock_table(table_name)
         self._update()
+
+        #Ανοίγουμε το αρχείο wal για να γράψουμε ότι θα γίνει εντολη sort
+        log = open("log/wal.log", "a")
+        
+        #Γράψιμο πληροφοριών στο αρχείο wal
+        log.write(f"sort {table_name} on column name: {column_name} in ")
+        if asc == True:
+            log.write("ascending order\n")
+        else:
+            log.write("not ascending order\n")
+        #Κλείνουμε το αρχείο log
+        log.close()
+
+        #Αποθήκευση του backup της βάσης
+        self.save("log/States")
+
         self.save()
 
     def inner_join(self, left_table_name, right_table_name, condition, save_as=None, return_object=False):
@@ -407,6 +603,14 @@ class Database:
         if save_as is not None:
             res._name = save_as
             self.table_from_object(res)
+
+            #Γράψιμο του inner join στο log
+            log = open("log/wal.log", "a")
+            log.write(f"inner_join with left table: {left_table} and right table: {right_table}, saved as table: {save_as}")
+
+            #Αποθήκευση του backup της βάσης
+            self.save("log/States")
+
         else:
             if return_object:
                 return res
@@ -578,6 +782,7 @@ class Database:
         '''
         Check whether the specified table's primary key column is indexed
 
+        table_name -> table's name (needs to exist in database)
         table_name -> table's name (needs to exist in database)
         '''
         return table_name in self.tables['meta_indexes'].table_name

@@ -3,7 +3,8 @@ import os
 # create db with name "smdb"
 db = Database('vsmdb', load=False)
 # create a single table named "classroom"
-db.create_table('classroom', ['building', 'room_number', 'capacity'], [str,str,int])
+db.create_table('classroom', ['building', 'room_number', 'capacity'], [str, str,int])
+
 # insert 5 rows
 db.insert('classroom', ['Packard', '101', '500'])
 db.insert('classroom', ['Painter', '514', '10'])
@@ -16,9 +17,17 @@ db.update('classroom', 10, 'capacity', 'capacity <= 30')
 db.delete('classroom', 'capacity <= 10')
 
 db.drop_table('test')
-db.create_table('test', ['c1'], [str], 'c1')
+db.create_table('test', ['capacity', 'capacity1', 'capacity2'], [int, int, int], 'capacity')
+db.insert('test', ['501', '502', '503'])
+db.insert('classroom', ['Painter', '100', '1'])
+
+print(db.classroom.column_types)
 
 db.classroom.show()
 
-i = db.maxrollback
+print(db.top)
+#db.change_max_rollback(7)
+
+
+
 
